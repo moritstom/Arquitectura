@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Nuevo Punto de Interés</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px; /* Altura del mapa */
+            width: 100%; /* Ancho del mapa */
+        }
+    </style>
+</head>
+<body>
+    <h1>Crear Nuevo Punto de Interés</h1>
+    <form method="POST">
+        <label for="nombre">Nombre:</label>
+        <input type="text" id="nombre" name="nombre" required><br>
+        
+        <label for="descripcion">Descripción:</label>
+        <textarea id="descripcion" name="descripcion" required></textarea><br>
+        
+        <label for="latitud">Latitud:</label>
+        <input type="text" id="latitud" name="latitud" required readonly><br>
+        
+        <label for="longitud">Longitud:</label>
+        <input type="text" id="longitud" name="longitud" required readonly><br>
+        
+        <label for="tipo">Tipo:</label>
+        <input type="text" id="tipo" name="tipo" required><br>
+        
+        <label for="apertura">Apertura:</label>
+        <input type="time" id="apertura" name="apertura"><br>
+        
+        <label for="cierre">Cierre:</label>
+        <input type="time" id="cierre" name="cierre"><br>
+
+        <button type="submit">Crear Punto de Interés</button>
+    </form>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Inicializar el mapa
+        var map = L.map('map').setView([-34.61, -58.38], 13); // Cambia las coordenadas iniciales según la ubicación deseada
+
+        // Capa de mapa base
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Marcador que se actualizará con la ubicación seleccionada
+        var marker;
+
+        // Evento de clic en el mapa
+        map.on('click', function(e) {
+            var lat = e.latlng.lat;
+            var lng = e.latlng.lng;
+
+            // Actualiza las entradas de latitud y longitud
+            document.getElementById('latitud').value = lat;
+            document.getElementById('longitud').value = lng;
+
+            // Si ya existe un marcador, lo actualiza; de lo contrario, crea uno nuevo
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+        });
+    </script>
+</body>
+</html>

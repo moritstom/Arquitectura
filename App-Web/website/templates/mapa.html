@@ -1,0 +1,147 @@
+<!-- templates/mapa.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interactivo</title>
+    
+    <!-- Incluir el CSS de Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <!-- MarkerCluster CSS (opcional) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    
+    <style>
+        #map {
+            height: 600px; /* Ajustar la altura del mapa */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Encabezado de la página -->
+    <h1>Mapa de Puntos de Interés y Eventos</h1>
+
+    <!-- Contenedor del mapa -->
+    <div id="map"></div>
+
+    <!-- Incluir el script de Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    
+    <!-- MarkerCluster JS (opcional) -->
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Coordenadas iniciales (por ejemplo, Neuquén)
+            const initialLat = -38.95;
+            const initialLng = -68.10;
+            const zoomLevel = 7;
+
+            // Inicializar el mapa
+            const myMap = L.map('map').setView([initialLat, initialLng], zoomLevel);
+
+            // Añadir una capa de mapa base de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(myMap);
+
+            // Crear grupos de marcadores para Puntos de Interés y Eventos
+            const puntosInteresLayer = L.markerClusterGroup();
+            const eventosLayer = L.markerClusterGroup();
+
+            // Datos GeoJSON pasados desde Flask
+            const mapaData = JSON.parse('{{ mapa_data|safe }}');
+
+            // Función para definir iconos personalizados
+            function getCustomIcon(tipo) {
+                if (tipo === 'punto_de_interes') {
+                    return L.icon({
+                        iconUrl: 'URL_DE_TU_ICONO_PUNTO_DE_INTERES', // Reemplaza con la URL de tu icono
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    });
+                } else if (tipo === 'evento') {
+                    return L.icon({
+                        iconUrl: 'URL_DE_TU_ICONO_EVENTO', // Reemplaza con la URL de tu icono
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowSize: [41, 41]
+                    });
+                } else {
+                    return L.icon(); // Icono por defecto
+                }
+            }
+
+            // Función para manejar cada feature
+            function onEachFeature(feature, layer) {
+                if (feature.properties && feature.properties.nombre) {
+                    let popupContent = `<strong>${feature.properties.nombre}</strong><br>`;
+                    popupContent += `<em>${feature.properties.tipo.replace('_', ' ').toUpperCase()}</em><br>`;
+                    popupContent += `${feature.properties.descripcion ? feature.properties.descripcion : ''}<br>`;
+
+                    if (feature.properties.tipo === 'evento') {
+                        popupContent += `<strong>Fecha de Inicio:</strong> ${new Date(feature.properties.fecha_inicio).toLocaleString()}<br>`;
+                        popupContent += `<strong>Hora de Inicio:</strong> ${feature.properties.hora_inicio}<br>`;
+                        popupContent += `<strong>Hora de Fin:</strong> ${feature.properties.hora_fin}<br>`;
+                    }
+
+                    if (feature.properties.tipo === 'punto_de_interes') {
+                        popupContent += `<strong>Horario:</strong> ${feature.properties.apertura ? feature.properties.apertura : ''} 
+                        - ${feature.properties.cierre ? feature.properties.cierre : ''}<br>`;
+                    }
+
+                    if (feature.properties.imagenes) {
+                        // Asumiendo que 'imagenes' contiene URLs separadas por comas
+                        const imagenes = feature.properties.imagenes.split(',');
+                        imagenes.forEach(img => {
+                            popupContent += `<img src="${img.trim()}" alt="${feature.properties.nombre}" style="width:100px;height:auto;"><br>`;
+                            });
+                    }
+
+                    layer.bindPopup(popupContent);
+                }
+            }
+
+            // Añadir los datos GeoJSON al mapa con diferentes capas
+            L.geoJSON(mapaData, {
+                onEachFeature: onEachFeature,
+                pointToLayer: function (feature, latlng) {
+                    const tipo = feature.properties.tipo;
+                    return L.marker(latlng, { icon: getCustomIcon(tipo) });
+                }
+            }).eachLayer(function(layer) {
+                const tipo = layer.feature.properties.tipo;
+                if (tipo === 'punto_de_interes') {
+                    puntosInteresLayer.addLayer(layer);
+                } else if (tipo === 'evento') {
+                    eventosLayer.addLayer(layer);
+                }
+            });
+
+            // Añadir las capas al mapa
+            myMap.addLayer(puntosInteresLayer);
+            myMap.addLayer(eventosLayer);
+
+            // Crear controles de capas
+            const overlayMaps = {
+                "Puntos de Interés": puntosInteresLayer,
+                "Eventos": eventosLayer
+            };
+
+            L.control.layers(null, overlayMaps, { collapsed: false }).addTo(myMap);
+
+            // Ajustar la vista del mapa para mostrar todos los puntos
+            const allLayers = L.featureGroup([puntosInteresLayer, eventosLayer]);
+            myMap.fitBounds(allLayers.getBounds());
+        });
+    </script>
+
+</body>
+</html>
