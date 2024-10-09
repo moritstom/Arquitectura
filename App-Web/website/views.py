@@ -155,6 +155,8 @@ def nuevo_evento():
         hora_inicio = request.form['hora_inicio']
         hora_fin = request.form['hora_fin']
         
+        # nuevo_evento dejarselo a un controlador
+        #esto de crear evento y subirlo a la BD que lo haga un controlador
         nuevo_evento = Evento(
             nombre=nombre,
             descripcion=descripcion,
